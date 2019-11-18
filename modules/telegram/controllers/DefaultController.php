@@ -73,16 +73,17 @@ class DefaultController extends Controller {
 			'chat_id' => $chat_id,
 			'text' => json_encode($updates),
 		]); 
-		Yii::$app->telegram->setWebhook(['url' => 'https://telegram-helper.herokuapp.com/telegram/webhook-page']); 
+		Yii::$app->telegram->setWebhook(['url' => '']); // insert here your webhook url 
 		return json_encode($result);
 	}
 
 
 	/**
 	 * Activate webhook on url
+	 * @param string $url - your webhook url
 	 * @return json
 	 */
-	public function actionSetWebhook($url = 'https://telegram-helper.herokuapp.com/telegram/webhook-page') {
+	public function actionSetWebhook($url) { 
 		$result = Yii::$app->telegram->setWebhook(['url' => $url]); 
 		return json_encode($result);
 	}

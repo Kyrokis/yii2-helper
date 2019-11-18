@@ -121,7 +121,7 @@ class DefaultController extends Controller {
 																])
 																->query()->getData()->all()[0];
 				}
-				if ($new['now'] != $value->now && $new['now'] != $value->new) {
+				if (($new['now'] != $value->now && $new['now'] != $value->new) || ($new['now'] == $value->now && $new['now'] != $value->new)) {
 					if (($model = frontend\models\Items::findOne($value->id)) !== null) {
 						$model->new = $new['now'];
 						$model->link_new = $new['link_new'];

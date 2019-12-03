@@ -9,6 +9,7 @@ use yii\db\ActiveRecord;
  * This is the model class for table "items".
  *
  * @property integer $id
+ * @property integer $id_telegram
  * @property string $title
  * @property string $link
  * @property string $link_img
@@ -18,6 +19,7 @@ use yii\db\ActiveRecord;
  * @property integer $id_template
  * @property integer $offset
  * @property integer $dt_update
+ * @property string $del
  */
 class Items extends ActiveRecord {
 
@@ -35,8 +37,8 @@ class Items extends ActiveRecord {
 	 */
 	public function rules() {
 		return [
-			[['id', 'id_template', 'offset', 'dt_update'], 'integer'],
-			[['title', 'link', 'link_img', 'link_new', 'now', 'new'], 'string'],
+			[['id', 'id_telegram', 'id_template', 'offset', 'dt_update'], 'integer'],
+			[['title', 'link', 'link_img', 'link_new', 'now', 'new', 'del'], 'string'],
 			[['title', 'link', 'id_template'], 'required'],
 			[['title', 'link'], 'safe', 'on' => self::SCENARIO_SEARCH],
 		];
@@ -81,7 +83,15 @@ class Items extends ActiveRecord {
 			],
 			[
 				'id' => 4,
-				'name' => 'youtube.com'
+				'name' => 'youtube.com',
+				'title' => ['<meta property="og:title" content="', '">'],
+				'now' => [' rel="nofollow">', '</a>'],
+				'link_img' => ['<link rel="image_src" href="', '">'],
+				'link_new' => ['feature=c4-videos-u" href="', '" ']
+			],
+			[
+				'id' => 5,
+				'name' => 'vk.com'
 			],
 		];
 	}
@@ -92,6 +102,7 @@ class Items extends ActiveRecord {
 	public function attributeLabels() {
 		return [
 			'id' => 'ID',
+			'id_telegram' => 'ID в телеграме',
 			'title' => 'Название',
 			'link' => 'Ссылка',
 			'link_img' => 'Ссылка на постер',
@@ -101,6 +112,7 @@ class Items extends ActiveRecord {
 			'id_template' => 'Шаблон',
 			'offset' => 'Смещение',
 			'dt_update' => 'Дата новинки',
+			'del' => 'Удален',
 		];
 	}
 
@@ -117,17 +129,27 @@ class Items extends ActiveRecord {
 	}
 
 	/**
+	 * @inheritdoc
+	 */
+	public function delete() {
+		$this->del = '1';
+		return $this->save(FALSE, ['del']);
+	}
+
+	/**
 	 * Create DataProvider for GridView.
 	 * @return \yii\data\ActiveDataProvider
 	 */
 	public function search() {
 		$query = self::find()->andFilterWhere([
 					'id' => $this->id,
-					'title' => $this->title,
 					'link' => $this->link,
 					'id_template' => $this->id_template,
+					'id_telegram' => $this->id_telegram,
+					'del' => '0',
 				])
-				->orderBy('(dt_update is null), dt_update desc, id');
+				->andFilterWhere(['ILIKE', 'title', $this->title])
+				->orderBy('(dt_update is null), dt_update desc, id_telegram, id');
 
 		return new \yii\data\ActiveDataProvider(['query' => $query, 'sort' => false]);
 	}
@@ -139,6 +161,20 @@ class Items extends ActiveRecord {
 	public function count() {
 		$model = new self;
 		return $model->search()->query->count();
+	}
+
+	/**
+	 * Get full link
+	 * @return string
+	 */
+	public static function getFullLink($link_new, $id_template) {
+		$fullLink = 'https://' . self::templateList()[$id_template]['name'] . $link_new;
+		if ($id_template == 2) {
+			$fullLink = $link_new;
+		} else if ($id_template == 3) {
+			$fullLink .= '#page=1';
+		}
+		return $fullLink;
 	}
 
 }

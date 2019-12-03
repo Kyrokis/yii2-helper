@@ -25,4 +25,14 @@ class Str {
 
 		return str_replace($monthEn, $monthRu, $dt);
 	}
+
+	/**
+	 * Get substring between 2 delimiters
+	 * @param array $delimiter
+	 * @param string $string
+	 * @return string
+	 */
+	public static function explode($delimiter, $string) {
+		return explode($delimiter[1], explode($delimiter[0], $string)[1])[0];
+	}
 }

@@ -68,6 +68,7 @@ $config = [
 	],
 	'params' => [
 		'googleApiKey' => '', // Insert here your google api key
+		'vkApiKey' => '', // Insert here your vk api key
 	],
 ];
 

@@ -14,6 +14,7 @@ echo Form::widget([
 	'columns' => 2,
 	'attributes' => [
 		'link' => [],
+		'id_telegram' => [],
 		'id_template' => [
 			'type' => Form::INPUT_DROPDOWN_LIST,
 			'items' => ArrayHelper::map(Items::templateList(), 'id', 'name'),

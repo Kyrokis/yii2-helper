@@ -4,6 +4,7 @@ use app\components\Str;
 use kartik\grid\GridView;
 use yii\helpers\Html;
 use yii\helpers\ArrayHelper;
+use yii\helpers\StringHelper;
 
 /* @var $this \yii\web\View */
 /* @var $model \app\models\Items */
@@ -42,12 +43,19 @@ echo GridView::widget([
 			'filter' => false,
 		],
 		[
+			'attribute' => 'id_telegram',
+			'format' => 'raw',
+			'value' => function ($data) {
+				return $data->id_telegram;
+			},
+		],
+		[
 			'attribute' => 'title',
 			'format' => 'raw',
 			'value' => function ($data) {
 				$link = $data->link;
-				if ($data->id_template == 4) {
-					$link = 'https://www.youtube.com/channel/' . $data->link . '/videos';
+				if ($data->id_template == 5) {
+					$link = 'https://www.vk.com/club' . mb_substr($data->link, 1);
 				}
 				return Html::a($data->title, $link, ['target' => '_blank']);
 			},
@@ -74,7 +82,12 @@ echo GridView::widget([
 			'attribute' => 'now',
 			'format' => 'raw',
 			'value' => function ($data) {
-				return $data->now;
+				$text = StringHelper::truncate(nl2br($data->now), 100, '...', null, true);
+				$tooltip = Html::tag('span', $text, [
+					'title' => $data->now,
+					'data-toggle' => 'tooltip',
+				]);
+				return $tooltip;
 			},
 			'filter' => false,
 		],
@@ -84,14 +97,12 @@ echo GridView::widget([
 			'value' => function ($data) {
 				$out = '';
 				if ($data->new) {
-					$fullLink = 'https://' . $data::templateList()[$data->id_template]['name'] . $data->link_new;
-					if ($data->id_template == 2) {
-						$fullLink = $data->link_new;
-					}
-					if ($data->id_template == 3) {
-						$fullLink .= '#page=1';
-					}
-					$out = Html::a($data->new, $fullLink, ['target' => '_blank']);
+					$text = StringHelper::truncate(nl2br($data->new), 100, '...', null, true);
+					$tooltip = Html::tag('span', $text, [
+						'title' => $data->new,
+						'data-toggle' => 'tooltip',
+					]);
+					$out = Html::a($tooltip, $data::getFullLink($data->link_new, $data->id_template), ['target' => '_blank']);
 				}
 				return $out;
 			},

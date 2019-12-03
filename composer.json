@@ -24,7 +24,8 @@
         "kartik-v/yii2-widgets": "*",
         "jaeger/querylist": "*",
         "aki/yii2-bot-telegram": "*",
-		"google/apiclient":"^2.0"
+		"google/apiclient":"^2.0",
+        "vkcom/vk-php-sdk": "dev-master"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

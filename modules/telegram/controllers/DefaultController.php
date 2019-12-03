@@ -2,8 +2,10 @@
 namespace app\modules\telegram\controllers;
 
 use Yii;
+use yii\helpers\Html;
 use yii\web\Controller;
 use aki\telegram\Telegram;
+use app\models\Items;
 use app\models\TelegramForm;
 use yii\httpclient\Client;
 use QL\QueryList;
@@ -80,10 +82,9 @@ class DefaultController extends Controller {
 
 	/**
 	 * Activate webhook on url
-	 * @param string $url - your webhook url
 	 * @return json
 	 */
-	public function actionSetWebhook($url) { 
+	public function actionSetWebhook($url) {
 		$result = Yii::$app->telegram->setWebhook(['url' => $url]); 
 		return json_encode($result);
 	}
@@ -100,11 +101,38 @@ class DefaultController extends Controller {
 			return false;
 		}
 		$message = $response->message->text;
+		$idTelegram = $response->message->from->id;
 		$anilibria = 'https://www.anilibria.tv';
 		$googleDrive = 'https://drive.google.com';
 		$romantica = 'https://sovetromantica.com';
 		$nyaasi = 'https://nyaa.si';
 		$urls = [];
+		if ($message == '/update') {
+			$items = json_decode(Yii::$app->runAction('helper/default/helping', ['id_telegram' => $idTelegram]), true);
+			$out = '';
+			foreach ($items as $item) {
+				if ($item) {
+					$linkText = Html::a($item['new'], Items::getFullLink($item['link_new'], $item['id_template']));
+					$out .= "<b>$item[title]</b>: $linkText\n";
+				}
+			}
+			Yii::debug($out);
+			if ($out) {
+				$result = Yii::$app->telegram->sendMessage([
+					'chat_id' => $idTelegram,
+					'text' => $out,
+					'parse_mode' => 'HTML',
+					'disable_web_page_preview' => true
+				]);
+			} else {
+				$result = Yii::$app->telegram->sendMessage([
+					'chat_id' => $idTelegram,
+					'text' => 'Ничего нового',
+				]);
+			}
+			Yii::debug($result);
+			return json_encode($result);
+		}
 		if (isset($response->message->entities)) {
 			foreach ($response->message->entities as $entity) {
 				if ($entity->type == 'url') {
@@ -118,7 +146,7 @@ class DefaultController extends Controller {
 		foreach ($urls as $url) {
 			if (mb_stripos($url, '.torrent') !== false || (mb_stripos($url, $nyaasi) !== false && basename($url) == 'torrent')) {
 				Yii::$app->telegram->sendDocument([
-					'chat_id' => $response->message->from->id,
+					'chat_id' => $idTelegram,
 					'document' => $this->loadFile($url),
 					'caption' => 'It\'s a me, Torrent file',
 				]);
@@ -128,7 +156,7 @@ class DefaultController extends Controller {
 				}
 				$idPos = strrpos($url, '?id=');
 				if ($idPos !== false) {
-					$folderId = substr($url, $idPos + 4, strlen($url));
+					$folderId = mb_substr($url, $idPos + 4, strlen($url));
 				} else {
 					$folderId = basename(parse_url($url, PHP_URL_PATH));
 				}
@@ -164,7 +192,7 @@ class DefaultController extends Controller {
 						$document = $this->loadFile($file->getWebContentLink(), $newName);
 						Yii::debug('Попытка отправить файл: ' . $newName);
 						$result = Yii::$app->telegram->sendDocument([
-							'chat_id' => $response->message->from->id,
+							'chat_id' => $idTelegram,
 							'document' => $document,
 							'caption' => $newName
 						]);
@@ -172,7 +200,7 @@ class DefaultController extends Controller {
 						if (!$result) {
 							Yii::debug('Что-то пошло не так и отправляю ссылку');
 							$result = Yii::$app->telegram->sendMessage([
-								'chat_id' => $response->message->from->id,
+								'chat_id' => $idTelegram,
 								'text' => $file->getWebContentLink(),
 							]); 
 						}
@@ -186,7 +214,7 @@ class DefaultController extends Controller {
 												->query()->getData()->all();
 				foreach ($items as $item) {
 					Yii::$app->telegram->sendDocument([
-						'chat_id' => $response->message->from->id,
+						'chat_id' =>$idTelegram,
 						'document' => $this->loadFile($anilibria . $item['link']),
 						'caption' => $item['title']
 					]);

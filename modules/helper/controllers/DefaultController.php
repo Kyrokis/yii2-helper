@@ -123,8 +123,8 @@ class DefaultController extends Controller {
 					$response = $client->get($value->link)->send();
 					$content = $response->content;
 					$new = [
-						'now' => \common\components\Str::explode($template['now'], $content),
-						'link_new' => \common\components\Str::explode($template['link_new'], $content)
+						'now' => \app\components\Str::explode($template['now'], $content),
+						'link_new' => \app\components\Str::explode($template['link_new'], $content)
 					];	
 				} else if ($value->id_template == 5) {
 					$vk = new \VK\Client\VKApiClient();

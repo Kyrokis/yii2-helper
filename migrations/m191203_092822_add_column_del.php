@@ -21,7 +21,7 @@ class m191203_092822_add_column_del extends Migration
 	 */
 	public function safeDown()
 	{
-		$this->execute('DROP TYPE del');
 		$this->dropColumn('items', 'del');
+		$this->execute('DROP TYPE del');
 	}
 }

@@ -9,9 +9,12 @@ use yii\bootstrap\Nav;
 use yii\bootstrap\NavBar;
 use yii\helpers\ArrayHelper;
 use yii\widgets\Breadcrumbs;
+use app\models\User;
 use app\assets\AppAsset;
 
 AppAsset::register($this);
+
+$title = isset($this->context->title) ? $this->context->title : '';
 ?>
 <?php $this->beginPage() ?>
 <!DOCTYPE html>
@@ -21,7 +24,7 @@ AppAsset::register($this);
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<?php $this->registerCsrfMetaTags() ?>
-		<title><?= Html::encode($this->context->title) ?></title>
+		<title><?= Html::encode($title) ?></title>
 		<?php $this->head() ?>
 	</head>
 	<body class="skin-blue sidebar-mini <?//= sidebar-collapse ?>">
@@ -46,19 +49,22 @@ AppAsset::register($this);
 							<li class="dropdown user user-menu">
 								<a href="#" class="dropdown-toggle" data-toggle="dropdown">
 									<i class="glyphicon glyphicon-user"></i>
-									<span class="hidden-xs"><?= 'Kyrokis' //Yii::$app->user->identity->name ?></span>
+									<span class="hidden-xs"><?= Yii::$app->user->identity->login ?></span>
 								</a>
 								<ul class="dropdown-menu">
 									<? /* User image */ ?>
-									<li class="user-header">
+									<li class="user-header" data-user_id="<?= Yii::$app->user->id ?>">
 										<p>
-											<?= 'Kyrokis' //Yii::$app->user->identity->name ?>
+											Прошлый раз <?= User::getTimeLastHelping(Yii::$app->user->id) ?>
 										</p>
 									</li>
 									<? /* Menu Footer */ ?>
 									<li class="user-footer">
+										<div class="pull-left">
+											<a href="<?= Url::to(['/user/default/update', 'id' => Yii::$app->user->id]) ?>" class="btn btn-default btn-flat">Редактировать аккаунт</a>
+										</div>
 										<div class="pull-right">
-											<a href="/auth/logout" class="btn btn-default btn-flat">Выход</a>
+											<a href="<?= Url::to(['/user/default/logout']) ?>" class="btn btn-default btn-flat">Выход</a>
 										</div>
 									</li>
 								</ul>
@@ -71,6 +77,7 @@ AppAsset::register($this);
 				<section class="sidebar">
 					<ul class="sidebar-menu tree" data-widget="tree">
 						<li class="header">Ссылки</li>
+						<li><a href="<?= Url::to(['/user']) ?>"><i class="fa fa-user"></i> <span>User</span></a></li>
 						<li><a href="<?= Url::to(['/telegram']) ?>"><i class="fa fa-laptop"></i> <span>Telegram</span></a></li>
 						<li><a href="<?= Url::to(['/helper']) ?>"><i class="fa fa-book"></i> <span>Helper</span></a></li>
 					</ul>

@@ -25,7 +25,7 @@ $config = [
 		'user' => [
 			'identityClass' => 'app\models\User',
 			'enableAutoLogin' => true,
-			'loginUrl' => '/auth/login',
+			'loginUrl' => '/user/default/login',
 		],
 		'errorHandler' => [
 			'errorAction' => 'site/error',
@@ -56,6 +56,7 @@ $config = [
 	'modules' => [
 		'helper' => 'app\modules\helper\HelperModule',
 		'telegram' => 'app\modules\telegram\TelegramModule',
+		'user' => 'app\modules\user\UserModule',
 		'debug' => [
 			'class' => 'yii\debug\Module',
 			'allowedIPs' => ['*'],

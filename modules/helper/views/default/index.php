@@ -5,6 +5,7 @@ use kartik\grid\GridView;
 use yii\helpers\Html;
 use yii\helpers\ArrayHelper;
 use yii\helpers\StringHelper;
+use app\models\User;
 
 /* @var $this \yii\web\View */
 /* @var $model \app\models\Items */
@@ -21,7 +22,11 @@ echo GridView::widget([
 			'content' => Html::a('<i class="glyphicon glyphicon-repeat"></i>', '#', [
 								'class' => 'btn btn-default helping',
 								'title' => 'Обновить',
-							]), 
+							]) . 
+						Html::a('<i class="glyphicon glyphicon-remove"></i>', ['index'], [
+                			    'class' => 'btn btn-default',
+                			    'title'=> 'Сбросить фильтр',
+                			]), 
 		],
 	],
 	'panel' => [
@@ -43,11 +48,19 @@ echo GridView::widget([
 			'filter' => false,
 		],
 		[
-			'attribute' => 'id_telegram',
+			'attribute' => 'user_id',
+			'label' => 'Пользователь',
 			'format' => 'raw',
 			'value' => function ($data) {
-				return $data->id_telegram;
+				return $data->user->login;
 			},
+			'width' => '150px',
+			'filterType' => GridView::FILTER_SELECT2,
+			'filter' => User::all(), 
+			'filterWidgetOptions' => [
+				'pluginOptions' => ['placeholder' => '',  'allowClear' => true],
+			],
+			'filterInputOptions' => ['multiple' => true, /*'disabled' => !\Yii::$app->user->identity->admin*/],
 		],
 		[
 			'attribute' => 'title',
@@ -102,7 +115,11 @@ echo GridView::widget([
 						'title' => $data->new,
 						'data-toggle' => 'tooltip',
 					]);
-					$out = Html::a($tooltip, $data::getFullLink($data->link_new, $data->id_template), ['target' => '_blank']);
+					if ($data->link_new) {
+						$out = Html::a($tooltip, $data::getFullLink($data->link_new, $data->id_template), ['target' => '_blank']);
+					} else {
+						$out = $tooltip;
+					}
 				}
 				return $out;
 			},
@@ -115,7 +132,7 @@ echo GridView::widget([
 				return $data->dt_update ? Str::dateEngToRu(date('d F H:i', $data->dt_update)) : '';
 			},
 			'filter' => false,
-			'width' => '125px',
+			'width' => '135px',
 		],
 		[
 			'class' => yii\grid\ActionColumn::className(),
@@ -135,7 +152,8 @@ echo GridView::widget([
 			'template' => '{check} {update} {delete}',
 			'options' => [
 				'width' => '55px',
-			]
+			],
+			
 		]
 	]
 ]);

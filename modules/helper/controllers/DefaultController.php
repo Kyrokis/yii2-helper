@@ -5,6 +5,7 @@ use Yii;
 use yii\web\Controller;
 use yii\httpclient\Client;
 use app\models\Items;
+use app\models\User;
 use app\components\thread\Thread;
 use QL\QueryList;
 use VK\Client\VKApiClient;
@@ -29,10 +30,13 @@ class DefaultController extends Controller {
 	/**
 	 * @inheritdoc
 	 */
-	public function beforeAction($action) {		
+	public function beforeAction($action) {
+		$user = Yii::$app->user;
 		if ($action->id == 'helping') {
 			$this->enableCsrfValidation = FALSE;
 			$this->layout = FALSE;
+		} else if ($user->isGuest) {
+			$this->redirect($user->loginUrl);
 		}
 
 		return parent::beforeAction($action);
@@ -45,6 +49,7 @@ class DefaultController extends Controller {
 	public function actionIndex() {
 		$model = new Items();
 		$model->setScenario(Items::SCENARIO_SEARCH);
+		$model->user_id = Yii::$app->user->id;
 		$model->load(\Yii::$app->request->get());
 		return $this->render('index', ['model' => $model]);
 	}
@@ -104,6 +109,10 @@ class DefaultController extends Controller {
 	 */
 	public function actionCheck($id) {
 		$model = $this->findModel($id);
+		$user = Yii::$app->user;
+		if (!$user->identity->admin && $user->id != $model->user_id) {
+			throw new \yii\web\ForbiddenHttpException('У Вас нет прав на это действие');
+		}
 		$model->now = $model->new;
 		return $model->save();
 	}
@@ -112,8 +121,13 @@ class DefaultController extends Controller {
 	 * Helping items
 	 * @return json
 	 */	
-	public function actionHelping($id = null, $id_telegram = null) {
-		$items = Items::find()->andFilterWhere(['id' => $id, 'id_telegram' => $id_telegram])->all();
+	public function actionHelping($id = null, $user_id = null) {
+		$items = Items::find()->andFilterWhere(['id' => $id, 'user_id' => $user_id, 'del' => '0'])->all();
+		if ($user_id) {
+			$user = User::findOne($user_id);
+			$user->dt_helping = time();
+			$user->save(FALSE, ['dt_helping']);	
+		}
 		$Thread = new Thread();
 		foreach ($items as $value) {
 			$Thread->Create(function() use($value) {
@@ -188,7 +202,10 @@ class DefaultController extends Controller {
 	 */
 	public function actionUpdate($id) {
 		$model = $this->findModel($id);
-
+		$user = Yii::$app->user;
+		if (!$user->identity->admin && $user->id != $model->user_id) {
+			throw new \yii\web\ForbiddenHttpException('У Вас нет прав на это действие');
+		}
 		if ($model->load(\Yii::$app->request->post()) && $model->save()) {
 			return $this->redirect(['index']);
 		} else if (!$model->offset) {
@@ -205,7 +222,12 @@ class DefaultController extends Controller {
 	 * @return mixed
 	 */
 	public function actionDelete($id) {
-		$this->findModel($id)->delete();
+		$model = $this->findModel($id);
+		$user = Yii::$app->user;
+		if (!$user->identity->admin && $user->id != $model->user_id) {
+			throw new \yii\web\ForbiddenHttpException('У Вас нет прав на это действие');
+		}
+		$model->delete();
 
 		return $this->redirect(['index']);
 	}
@@ -223,5 +245,8 @@ class DefaultController extends Controller {
 		}
 		
 		throw new \yii\web\NotFoundHttpException('The requested page does not exist.');
+	}
+
+	public function actionTest() {
 	}
 }

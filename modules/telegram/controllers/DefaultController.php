@@ -6,6 +6,7 @@ use yii\helpers\Html;
 use yii\web\Controller;
 use aki\telegram\Telegram;
 use app\models\Items;
+use app\models\User;
 use app\models\TelegramForm;
 use yii\httpclient\Client;
 use QL\QueryList;
@@ -24,6 +25,14 @@ class DefaultController extends Controller {
 	 * @inheritdoc
 	 */
 	public function beforeAction($action) {		
+		$user = Yii::$app->user;
+		if ($action->id != 'webhook-page' && !$user->identity->admin) {
+			if ($user->isGuest) {
+				$this->redirect($user->loginUrl);
+			} else {
+				$this->goHome();
+			}
+		}
 		if ($action->id == 'webhook-page') {
 			$this->enableCsrfValidation = FALSE;
 			$this->layout = FALSE;
@@ -94,8 +103,7 @@ class DefaultController extends Controller {
 	 * @return json
 	 */
 	public function actionWebhookPage() {
-		$json = file_get_contents('php://input');
-		$response = json_decode($json);
+		$response = Yii::$app->telegram->hook();
 
 		if (!isset($response->message->text)) {
 			return false;
@@ -107,16 +115,25 @@ class DefaultController extends Controller {
 		$romantica = 'https://sovetromantica.com';
 		$nyaasi = 'https://nyaa.si';
 		$urls = [];
-		if ($message == '/update') {
-			$items = json_decode(Yii::$app->runAction('helper/default/helping', ['id_telegram' => $idTelegram]), true);
+		if ($message == '/get_id') {
+			$result = Yii::$app->telegram->sendMessage([
+				'chat_id' => $idTelegram,
+				'text' => $idTelegram,
+			]);
+		} else if ($message == '/update') {
+			$user = User::find()->where(['id_telegram' => $idTelegram, 'del' => '0'])->one();
+			$items = json_decode(Yii::$app->runAction('helper/default/helping', ['user_id' => $user->id]), true);
+			Yii::debug($items);
 			$out = '';
-			foreach ($items as $item) {
-				if ($item) {
-					$linkText = Html::a($item['new'], Items::getFullLink($item['link_new'], $item['id_template']));
-					$out .= "<b>$item[title]</b>: $linkText\n";
+			if ($items) {
+				foreach ($items as $item) {
+					if ($item) {
+						$linkText = Html::a($item['new'], Items::getFullLink($item['link_new'], $item['id_template']));
+						$out .= "<b>$item[title]</b>: $linkText\n";
+					}
 				}
+				Yii::debug($out);
 			}
-			Yii::debug($out);
 			if ($out) {
 				$result = Yii::$app->telegram->sendMessage([
 					'chat_id' => $idTelegram,
@@ -130,6 +147,20 @@ class DefaultController extends Controller {
 					'text' => 'Ничего нового',
 				]);
 			}
+			Yii::debug($result);
+			return json_encode($result);
+		} else if ($message == '/show_keyboard') {
+			$reply_markup = [
+				'keyboard' => [[
+					['text' => '/update']
+				]],
+				'resize_keyboard' => true,
+			];
+			$result = Yii::$app->telegram->sendMessage([
+				'chat_id' => $idTelegram,
+				'text' => 'Готово',
+				'reply_markup' => json_encode($reply_markup),
+			]);
 			Yii::debug($result);
 			return json_encode($result);
 		}
@@ -221,6 +252,9 @@ class DefaultController extends Controller {
 				}
 			}
 		}
+	}
+
+	public function actionTest() {		
 	}
 
 	private function loadFile($url, $filename = null) {

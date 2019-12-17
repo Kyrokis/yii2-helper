@@ -4,12 +4,13 @@ namespace app\models;
 
 use Yii;
 use yii\db\ActiveRecord;
+use app\models\User;
 
 /**
  * This is the model class for table "items".
  *
  * @property integer $id
- * @property integer $id_telegram
+ * @property integer $user_id
  * @property string $title
  * @property string $link
  * @property string $link_img
@@ -37,11 +38,19 @@ class Items extends ActiveRecord {
 	 */
 	public function rules() {
 		return [
-			[['id', 'id_telegram', 'id_template', 'offset', 'dt_update'], 'integer'],
+			[['id', 'user_id', 'id_template', 'offset', 'dt_update'], 'integer'],
 			[['title', 'link', 'link_img', 'link_new', 'now', 'new', 'del'], 'string'],
 			[['title', 'link', 'id_template'], 'required'],
 			[['title', 'link'], 'safe', 'on' => self::SCENARIO_SEARCH],
 		];
+	}
+
+	/**
+	 * User
+	 * @return \app\models\User
+	 */
+	public function getUser() {
+		return $this->hasOne(User::className(), ['id' => 'user_id']);
 	}
 
 	/**
@@ -93,6 +102,14 @@ class Items extends ActiveRecord {
 				'id' => 5,
 				'name' => 'vk.com'
 			],
+			[
+				'id' => 6,
+				'name' => 'animevost.org',
+				'title' => ['.shortstoryContent h4', 'text'],
+				'now' => ['.shortstoryHead h1', 'text'],
+				'link_img' => ['.imgRadius', 'src'],
+				'link_new' => ['#items > div:last', 'text']
+			],
 		];
 	}
 
@@ -102,7 +119,7 @@ class Items extends ActiveRecord {
 	public function attributeLabels() {
 		return [
 			'id' => 'ID',
-			'id_telegram' => 'ID в телеграме',
+			'user_id' => 'ID юзера',
 			'title' => 'Название',
 			'link' => 'Ссылка',
 			'link_img' => 'Ссылка на постер',
@@ -124,6 +141,7 @@ class Items extends ActiveRecord {
 			if ($this->new == '') {
 				$this->new = $this->now;
 			}
+			$this->user_id = Yii::$app->user->id;
 		}
 		return parent::beforeSave($insert);
 	}
@@ -141,15 +159,17 @@ class Items extends ActiveRecord {
 	 * @return \yii\data\ActiveDataProvider
 	 */
 	public function search() {
+		//$user_id = Yii::$app->user->identity->admin ? $this->user_id : Yii::$app->user->id;
+		$user_id =  $this->user_id;
 		$query = self::find()->andFilterWhere([
 					'id' => $this->id,
 					'link' => $this->link,
+					'user_id' => $user_id,
 					'id_template' => $this->id_template,
-					'id_telegram' => $this->id_telegram,
 					'del' => '0',
 				])
 				->andFilterWhere(['ILIKE', 'title', $this->title])
-				->orderBy('(dt_update is null), dt_update desc, id_telegram, id');
+				->orderBy('user_id, (dt_update is null), dt_update desc, id');
 
 		return new \yii\data\ActiveDataProvider(['query' => $query, 'sort' => false]);
 	}

@@ -10,6 +10,7 @@ use app\models\User;
 use app\models\TelegramForm;
 use yii\httpclient\Client;
 use QL\QueryList;
+use GuzzleHttp\Exception\ClientException;
 use Google_Client;
 use Google_Service_Drive;
 use Google_Service_Exception;
@@ -105,7 +106,23 @@ class DefaultController extends Controller {
 	public function actionWebhookPage() {
 		$response = Yii::$app->telegram->hook();
 
-		if (!isset($response->message->text)) {
+		if (isset($response->callback_query->data)) {
+			$callback_data = json_decode($response->callback_query->data);
+			$idTelegram = $response->callback_query->from->id;
+			$idMessage = $response->callback_query->message->message_id;
+			if ($callback_data->type == 'check') {
+				$model = Items::findOne($callback_data->item_id);
+				$model->now = $model->new;
+				if ($model->save()) {
+					$result = Yii::$app->telegram->editMessageReplyMarkup([
+						'chat_id' => $idTelegram,
+						'message_id' => $idMessage,
+					]);	
+					return Yii::debug($result);
+				}
+			}
+
+		} else if (!isset($response->message->text)) {
 			return false;
 		}
 		$message = $response->message->text;
@@ -124,24 +141,34 @@ class DefaultController extends Controller {
 			$user = User::find()->where(['id_telegram' => $idTelegram, 'del' => '0'])->one();
 			$items = json_decode(Yii::$app->runAction('helper/default/helping', ['user_id' => $user->id]), true);
 			Yii::debug($items);
-			$out = '';
+			$out = false;
 			if ($items) {
 				foreach ($items as $item) {
 					if ($item) {
 						$linkText = Html::a($item['new'], Items::getFullLink($item['link_new'], $item['id_template']));
-						$out .= "<b>$item[title]</b>: $linkText\n";
+						$reply_markup = [
+							'inline_keyboard' => [[
+								[
+									'text' => 'Check',
+									'callback_data' => json_encode(['type' => 'check', 'item_id' => $item['id']])
+								]
+							]],
+							'resize_keyboard' => true,
+						];
+						$result = Yii::$app->telegram->sendMessage([
+							'chat_id' => $idTelegram,
+							'text' => "<b>$item[title]</b>: $linkText",
+							'parse_mode' => 'HTML',
+							'disable_web_page_preview' => true,
+							'reply_markup' => json_encode($reply_markup),
+						]);
+						Yii::debug($result);
+						$out = true;
 					}
 				}
 				Yii::debug($out);
 			}
-			if ($out) {
-				$result = Yii::$app->telegram->sendMessage([
-					'chat_id' => $idTelegram,
-					'text' => $out,
-					'parse_mode' => 'HTML',
-					'disable_web_page_preview' => true
-				]);
-			} else {
+			if (!$out) {
 				$result = Yii::$app->telegram->sendMessage([
 					'chat_id' => $idTelegram,
 					'text' => 'Ничего нового',
@@ -183,7 +210,13 @@ class DefaultController extends Controller {
 				]);
 			} else if (mb_stripos($url, $googleDrive) !== false || mb_stripos($url, $romantica) !== false) {
 				if (mb_stripos($url, $romantica) !== false) {
-					$url = QueryList::get($url)->find('.animeTorrentDownload')->attrs('href')->all()[0];
+					try {
+						$url = QueryList::get($url)->find('.animeTorrentDownload')->attrs('href')->all()[0];
+					}
+					catch (ClientException $e) {
+						Yii::error($e->getMessage());
+						continue;
+					}
 				}
 				$idPos = strrpos($url, '?id=');
 				if ($idPos !== false) {
@@ -238,11 +271,17 @@ class DefaultController extends Controller {
 					}
 				}
 			} else if (mb_stripos($url, $anilibria) !== false) {
-				$items = QueryList::get($url)->rules([ 
+				try {
+					$items = QueryList::get($url)->rules([ 
 													'title' => ['.torrentcol1', 'text'],
 													'link' => ['.torrentcol4 > a', 'href']
 												])
 												->query()->getData()->all();
+				}
+				catch (ClientException $e) {
+					Yii::error($e->getMessage());
+					continue;
+				}
 				foreach ($items as $item) {
 					Yii::$app->telegram->sendDocument([
 						'chat_id' =>$idTelegram,
@@ -254,7 +293,7 @@ class DefaultController extends Controller {
 		}
 	}
 
-	public function actionTest() {		
+	public function actionTest() {
 	}
 
 	private function loadFile($url, $filename = null) {

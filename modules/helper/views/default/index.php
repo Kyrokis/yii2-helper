@@ -95,7 +95,7 @@ echo GridView::widget([
 			'attribute' => 'now',
 			'format' => 'raw',
 			'value' => function ($data) {
-				$text = StringHelper::truncate(nl2br($data->now), 100, '...', null, true);
+				$text = nl2br(StringHelper::truncate($data->now, 100, '...', null, true));
 				$tooltip = Html::tag('span', $text, [
 					'title' => $data->now,
 					'data-toggle' => 'tooltip',
@@ -110,7 +110,7 @@ echo GridView::widget([
 			'value' => function ($data) {
 				$out = '';
 				if ($data->new) {
-					$text = StringHelper::truncate(nl2br($data->new), 100, '...', null, true);
+					$text = nl2br(StringHelper::truncate($data->new, 100, '...', null, true));
 					$tooltip = Html::tag('span', $text, [
 						'title' => $data->new,
 						'data-toggle' => 'tooltip',

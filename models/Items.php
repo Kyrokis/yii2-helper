@@ -104,11 +104,34 @@ class Items extends ActiveRecord {
 			],
 			[
 				'id' => 6,
+				'name' => 'lostfilm.tv',
+				'title' => ['.title-en', 'text'],
+				'now' => ['.movie-parts-list tr:not(.not-available):first .beta', 'text'],
+				'link_img' => ['.main_poster img', 'src'],
+				'link_new' => ['.movie-parts-list tr:not(.not-available):first .alpha div', 'data-episode']
+			],
+			[
+				'id' => 7,
+				'name' => 'manganelo.com',
+				'title' => ['.story-info-right h1', 'text'],
+				'now' => ['.chapter-name', 'text'],
+				'link_img' => ['.info-image img', 'src'],
+				'link_new' => ['.chapter-name', 'href']
+			],
+			[
+				'id' => 8,
 				'name' => 'animevost.org',
 				'title' => ['.shortstoryContent h4', 'text'],
 				'now' => ['.shortstoryHead h1', 'text'],
 				'link_img' => ['.imgRadius', 'src'],
 				'link_new' => ['#items > div:last', 'text']
+			],
+			[
+				'id' => 9,
+				'name' => 'rarbgmirror.org',
+				'now' => ['div[id^="episode_"]:first .tvshowEpNum', 'text'],
+				'link_img' => ['.tvshowinfo td:eq(0) img', 'src'],
+				'link_new' => ['div[id^="episode_"]:first', 'id']
 			],
 		];
 	}
@@ -189,10 +212,15 @@ class Items extends ActiveRecord {
 	 */
 	public static function getFullLink($link_new, $id_template) {
 		$fullLink = 'https://' . self::templateList()[$id_template]['name'] . $link_new;
-		if ($id_template == 2) {
+		if ($id_template == 2 || $id_template == 7) {
 			$fullLink = $link_new;
 		} else if ($id_template == 3) {
 			$fullLink .= '#page=1';
+		} else if ($id_template == 6) {
+			$fullLink = 'https://www.lostfilm.tv/v_search.php?a=' . $link_new;
+		} else if ($id_template == 8) {
+			$id = explode('episode_', $link_new);
+			$fullLink = 'https://rarbgmirror.org/tv.php?ajax=1&tvepisode=' . $id[1];
 		}
 		return $fullLink;
 	}

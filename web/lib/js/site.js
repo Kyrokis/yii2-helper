@@ -7,7 +7,7 @@ var site = {};
 	 */
 	site.sendMessage = function () {
 		$.get('/telegram/default/send-message', {
-			'chat_id': $('#telegramform-chatId').val(),
+			'chat_id': $('#telegramform-chatid').val(),
 			'text': $('#telegramform-text').val(),
 		}).done(function (data) {
 			console.log(data);
@@ -39,8 +39,24 @@ var site = {};
 	 */
 	site.helping = function () {
 		$(this).text('Helping...').addClass('disabled');
-		$.get('/helper/default/helping').done(function (data) {
+		$.get('/helper/default/helping', {'user_id': $('.user-header').data('user_id')}).done(function (data) {
 			location.reload();
+		});
+		return false;
+	};
+
+	/**
+	 * Let's copying
+	 */
+	site.copy = function () {
+		var item = $(this);
+		var id = item.data('id');
+		$.get('/helper/default/copy', {'id': id}).done(function (data) {
+			if (data) {
+				location.reload();
+			} else {
+				console.log('Что-то пошло не так');
+			}
 		});
 		return false;
 	};
@@ -53,8 +69,8 @@ var site = {};
 		var id = item.data('id');
 		$.get('/helper/default/check', {'id': id}).done(function (data) {
 			if (data) {
-				var titleNew = item.parent().prev().prev().text();
-				item.parent().prev().prev().prev().text(titleNew);
+				var titleNew = item.parent().prev().prev().children().html();
+				item.parent().prev().prev().prev().html(titleNew);
 				item.parent().parent().removeClass('info');
 				item.next().remove();
 				item.remove();
@@ -72,4 +88,5 @@ $(function () {
 	$('body').on('click', '.get-data', site.getData);
 	$('body').on('click', '.helping', site.helping);
 	$('body').on('click', '.check', site.check);
+	$('body').on('click', '.copy', site.copy);
 });

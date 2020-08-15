@@ -7,6 +7,7 @@ use yii\web\Controller;
 use aki\telegram\Telegram;
 use app\models\Items;
 use app\models\User;
+use app\modules\template\models\Template;
 use app\models\TelegramForm;
 use yii\httpclient\Client;
 use QL\QueryList;
@@ -162,7 +163,7 @@ class DefaultController extends Controller {
 			if ($items) {
 				foreach ($items as $item) {
 					if ($item && $item['error'] == '0') {
-						$linkText = Html::a($item['new'], Items::getFullLink($item['link_new'], $item['id_template']));
+						$linkText = Html::a($item['new'], Template::getFullLink($item['link_new'], $item['id_template']));
 						$reply_markup = [
 							'inline_keyboard' => [[
 								[

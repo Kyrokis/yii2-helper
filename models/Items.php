@@ -135,23 +135,4 @@ class Items extends ActiveRecord {
 		return $model->search()->query->count();
 	}
 
-	/**
-	 * Get full link
-	 * @return string
-	 */
-	public static function getFullLink($link_new, $id_template) {
-		$fullLink = 'https://' . self::templateList()[$id_template]['name'] . $link_new;
-		if ($id_template == 2 || $id_template == 7) {
-			$fullLink = $link_new;
-		} else if ($id_template == 3) {
-			$fullLink .= '#page=1';
-		} else if ($id_template == 6) {
-			$fullLink = 'https://www.lostfilm.tv/v_search.php?a=' . $link_new;
-		} else if ($id_template == 8) {
-			$id = explode('episode_', $link_new);
-			$fullLink = 'https://rarbgmirror.org/tv.php?ajax=1&tvepisode=' . $id[1];
-		}
-		return $fullLink;
-	}
-
 }

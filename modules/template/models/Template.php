@@ -242,4 +242,13 @@ class template extends ActiveRecord {
 		$model = new self;
 		return $model->search()->query->count();
 	}
+
+	/**
+	 * Get full link
+	 * @return string
+	 */
+	public static function getFullLink($link_new, $id_template) {
+		$template = self::findOne($id_template);
+		return $template->full_link[0] . $link_new . $template->full_link[1];
+	}
 }

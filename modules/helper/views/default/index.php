@@ -121,7 +121,7 @@ echo GridView::widget([
 						'data-toggle' => 'tooltip',
 					]);
 					if ($data->link_new) {
-						$out = Html::a($tooltip, $data->template->full_link[0] . $data->link_new . $data->template->full_link[1], ['target' => '_blank']);
+						$out = Html::a($tooltip, Template::getFullLink($data->link_new, $data->id_template), ['target' => '_blank']);
 					} else {
 						$out = $tooltip;
 					}

@@ -5,6 +5,7 @@ namespace app\models;
 use Yii;
 use yii\db\ActiveRecord;
 use app\models\User;
+use app\modules\template\models\Template;
 
 /**
  * This is the model class for table "items".
@@ -20,6 +21,7 @@ use app\models\User;
  * @property integer $id_template
  * @property integer $offset
  * @property integer $dt_update
+ * @property string $error
  * @property string $del
  */
 class Items extends ActiveRecord {
@@ -39,7 +41,7 @@ class Items extends ActiveRecord {
 	public function rules() {
 		return [
 			[['id', 'user_id', 'id_template', 'offset', 'dt_update'], 'integer'],
-			[['title', 'link', 'link_img', 'link_new', 'now', 'new', 'del'], 'string'],
+			[['title', 'link', 'link_img', 'link_new', 'now', 'new', 'error', 'del'], 'string'],
 			[['title', 'link', 'id_template'], 'required'],
 			[['title', 'link'], 'safe', 'on' => self::SCENARIO_SEARCH],
 		];
@@ -54,86 +56,11 @@ class Items extends ActiveRecord {
 	}
 
 	/**
-	 * @return array
+	 * Template
+	 * @return \app\modules\template\models\Template
 	 */
-	public static function templateList($offset = 0) {
-		return [
-			[
-				'id' => 0,
-				'name' => 'anilibria.tv',
-				'title' => ['.release-title', 'text'],
-				'now' => ['.torrentcol1:eq(' . $offset . ')', 'text'],
-				'link_img' => ['.detail_torrent_pic', 'src'],
-				'link_new' => ['.torrentcol4:eq(' . $offset . ') > a', 'href']
-			],
-			[
-				'id' => 1,
-				'name' => 'mangarock.com',
-				'title' => ['._13gHt', 'text'],
-				'now' => ['._1A2Dc.rZ05K', 'text'],
-				'link_img' => ['.EB2Aw._eoev', 'src'],
-				'link_new' => ['._1A2Dc.rZ05K', 'href']
-			],
-			[
-				'id' => 2,
-				'name' => 'sovetromantica.com',
-				'title' => ['.anime-name > div', 'text'],
-				'now' => ['.episodes-slick_item:last > a > div > span', 'text'],
-				'link_img' => ['#poster', 'data-src'],
-				'link_new' => ['.animeTorrentDownload', 'href']
-			],
-			[
-				'id' => 3,
-				'name' => 'manga-chan.me',
-				'title' => ['.title_top_a', 'text'],
-				'now' => ['.manga2 > a', 'text'],
-				'link_img' => ['#cover', 'src'],
-				'link_new' => ['.manga2 > a', 'href']
-			],
-			[
-				'id' => 4,
-				'name' => 'youtube.com',
-				'title' => ['<meta property="og:title" content="', '">'],
-				'now' => [' rel="nofollow">', '</a>'],
-				'link_img' => ['<link rel="image_src" href="', '">'],
-				'link_new' => ['feature=c4-videos-u" href="', '" ']
-			],
-			[
-				'id' => 5,
-				'name' => 'vk.com'
-			],
-			[
-				'id' => 6,
-				'name' => 'lostfilm.tv',
-				'title' => ['.title-en', 'text'],
-				'now' => ['.movie-parts-list tr:not(.not-available):first .beta', 'text'],
-				'link_img' => ['.main_poster img', 'src'],
-				'link_new' => ['.movie-parts-list tr:not(.not-available):first .alpha div', 'data-episode']
-			],
-			[
-				'id' => 7,
-				'name' => 'manganelo.com',
-				'title' => ['.story-info-right h1', 'text'],
-				'now' => ['.chapter-name', 'text'],
-				'link_img' => ['.info-image img', 'src'],
-				'link_new' => ['.chapter-name', 'href']
-			],
-			[
-				'id' => 8,
-				'name' => 'animevost.org',
-				'title' => ['.shortstoryContent h4', 'text'],
-				'now' => ['.shortstoryHead h1', 'text'],
-				'link_img' => ['.imgRadius', 'src'],
-				'link_new' => ['#items > div:last', 'text']
-			],
-			[
-				'id' => 9,
-				'name' => 'rarbgmirror.org',
-				'now' => ['div[id^="episode_"]:first .tvshowEpNum', 'text'],
-				'link_img' => ['.tvshowinfo td:eq(0) img', 'src'],
-				'link_new' => ['div[id^="episode_"]:first', 'id']
-			],
-		];
+	public function getTemplate() {
+		return $this->hasOne(Template::className(), ['id' => 'id_template']);
 	}
 
 	/**
@@ -152,6 +79,7 @@ class Items extends ActiveRecord {
 			'id_template' => 'Шаблон',
 			'offset' => 'Смещение',
 			'dt_update' => 'Дата новинки',
+			'error' => 'Ошибка',
 			'del' => 'Удален',
 		];
 	}
@@ -189,12 +117,13 @@ class Items extends ActiveRecord {
 					'link' => $this->link,
 					'user_id' => $user_id,
 					'id_template' => $this->id_template,
+					'error' => $this->error,
 					'del' => '0',
 				])
 				->andFilterWhere(['ILIKE', 'title', $this->title])
-				->orderBy('user_id, (dt_update is null), dt_update desc, id');
+				->orderBy('user_id, (dt_update is null), (now != new) desc, dt_update desc, id');
 
-		return new \yii\data\ActiveDataProvider(['query' => $query, 'sort' => false]);
+		return new \yii\data\ActiveDataProvider(['query' => $query, 'pagination' => false, 'sort' => false]);
 	}
 
 	/**

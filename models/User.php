@@ -17,6 +17,8 @@ use app\models\Items;
  * @property integer $dt_update
  * @property integer $dt_helping
  * @property string $admin
+ * @property string $show_all
+ * @property string $copying
  * @property string $del
  */
 class User extends ActiveRecord implements \yii\web\IdentityInterface {
@@ -38,7 +40,7 @@ class User extends ActiveRecord implements \yii\web\IdentityInterface {
 	public function rules() {
 		return [
 			[['id', 'id_telegram', 'dt_create', 'dt_update', 'dt_helping'], 'integer'],
-			[['login', 'password', 'admin', 'del'], 'string'],
+			[['login', 'password', 'admin', 'del', 'show_all', 'copying'], 'string'],
 			[['login', 'password'], 'required', 'on' => self::SCENARIO_CREATE],
 			[['login'], 'required', 'on' => self::SCENARIO_UPDATE],
 			[['login'], 'string', 'max' => 50],
@@ -59,6 +61,8 @@ class User extends ActiveRecord implements \yii\web\IdentityInterface {
 			'dt_update' => 'Дата обновления',
 			'dt_helping' => 'Дата хелпинга',
 			'admin' => 'Администратор',
+			'show_all' => 'Показывать все',
+			'copying' => 'Можно копировать записи',
 			'del' => 'Удален',
 		];
 	}

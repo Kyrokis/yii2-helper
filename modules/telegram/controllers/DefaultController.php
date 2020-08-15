@@ -16,7 +16,7 @@ use Google_Service_Drive;
 use Google_Service_Exception;
 
 /**
- * Controller for telegram app
+ * Controller for telegram module
  */
 class DefaultController extends Controller {
 
@@ -63,19 +63,19 @@ class DefaultController extends Controller {
 	 * Send message
 	 * @return json
 	 */
-	public function actionSendMessage($chat_id = 197239226, $text = 'test') {
+	public function actionSendMessage($chat_id = '197239226', $text = 'test') {
 		$result = Yii::$app->telegram->sendMessage([
 					'chat_id' => $chat_id,
 					'text' => $text,
 				]); 
-		return json_encode($result);
+		return $result;
 	}
 
 	/**
 	 * Get updates in selected chat
 	 * @return json
 	 */
-	public function actionGetUpdates($chat_id = 197239226) {
+	public function actionGetUpdates($chat_id = '197239226') {
 		Yii::$app->telegram->deleteWebhook(); 
 		$updates = Yii::$app->telegram->getUpdates([
 			'chat_id' => $chat_id,
@@ -86,7 +86,7 @@ class DefaultController extends Controller {
 			'text' => json_encode($updates),
 		]); 
 		Yii::$app->telegram->setWebhook(['url' => '']); // insert here your webhook url 
-		return json_encode($result);
+		return $result;
 	}
 
 
@@ -105,7 +105,7 @@ class DefaultController extends Controller {
 	 */
 	public function actionWebhookPage() {
 		$response = Yii::$app->telegram->hook();
-
+		Yii::debug(json_encode($response));
 		if (isset($response->callback_query->data)) {
 			$callback_data = json_decode($response->callback_query->data);
 			$idTelegram = $response->callback_query->from->id;
@@ -137,6 +137,23 @@ class DefaultController extends Controller {
 				'chat_id' => $idTelegram,
 				'text' => $idTelegram,
 			]);
+		} else if ($message == '/change_mode') {
+			if ($user = User::find()->where(['id_telegram' => $idTelegram, 'del' => '0'])->one()) {
+				$user->show_all = $user->show_all ? '0' : '1';
+				if ($user->save(FALSE, ['show_all'])) {
+					$result = Yii::$app->telegram->sendMessage([
+						'chat_id' => $idTelegram,
+						'text' => 'Режим изменен на ' . ($user->show_all == '1' ? '"Показывать все"' : '"Показывать один"'),
+					]);
+				}
+			} else {
+				$result = Yii::$app->telegram->sendMessage([
+					'chat_id' => $idTelegram,
+					'text' => 'Вначале зарегистрируйтесь или добавьте "ID в телеграме"',
+				]);
+			}
+			Yii::debug($result);
+			return $result;
 		} else if ($message == '/update') {
 			$user = User::find()->where(['id_telegram' => $idTelegram, 'del' => '0'])->one();
 			$items = json_decode(Yii::$app->runAction('helper/default/helping', ['user_id' => $user->id]), true);
@@ -144,7 +161,7 @@ class DefaultController extends Controller {
 			$out = false;
 			if ($items) {
 				foreach ($items as $item) {
-					if ($item) {
+					if ($item && $item['error'] == '0') {
 						$linkText = Html::a($item['new'], Items::getFullLink($item['link_new'], $item['id_template']));
 						$reply_markup = [
 							'inline_keyboard' => [[
@@ -175,7 +192,7 @@ class DefaultController extends Controller {
 				]);
 			}
 			Yii::debug($result);
-			return json_encode($result);
+			return $result;
 		} else if ($message == '/show_keyboard') {
 			$reply_markup = [
 				'keyboard' => [[
@@ -189,7 +206,7 @@ class DefaultController extends Controller {
 				'reply_markup' => json_encode($reply_markup),
 			]);
 			Yii::debug($result);
-			return json_encode($result);
+			return $result;
 		}
 		if (isset($response->message->entities)) {
 			foreach ($response->message->entities as $entity) {
@@ -236,37 +253,42 @@ class DefaultController extends Controller {
 					Yii::error($e->getMessage());
 					continue;
 				}
+				$show_all = 0;
+				if ($user = User::find()->where(['id_telegram' => $idTelegram, 'del' => '0'])->one()) {
+					$show_all = $user->show_all;
+				}
 				foreach ($folders->getFiles() as $folder) {
 					$subFolderId = $folder->getId();
 					try {
-						$files = $service->files->listFiles([
-							'fields' => 'files(id, name, webContentLink)',
+						$listFiles = $service->files->listFiles([
+							'fields' => 'files(id, name, modifiedTime, webContentLink)',
 							'q' => "'$subFolderId' in parents",
-							'orderBy' => 'name desc',
-							'pageSize' => 1
+							'orderBy' => 'modifiedTime desc',
+							'pageSize' => $show_all ? null : 1
 						]);
 					}
 					catch (Google_Service_Exception $e) {
 						Yii::error($e->getMessage());
 						continue;
 					}
-					if ($files->getFiles()) {
-						$file = $files->getFiles()[0];
-						$newName = $file->getName();
-						$document = $this->loadFile($file->getWebContentLink(), $newName);
-						Yii::debug('Попытка отправить файл: ' . $newName);
-						$result = Yii::$app->telegram->sendDocument([
-							'chat_id' => $idTelegram,
-							'document' => $document,
-							'caption' => $newName
-						]);
-						Yii::debug(json_encode($result));
-						if (!$result) {
-							Yii::debug('Что-то пошло не так и отправляю ссылку');
-							$result = Yii::$app->telegram->sendMessage([
+					if ($files = $listFiles->getFiles()) {
+						foreach ($files as $file) {
+							$newName = $file->getName();
+							$document = $this->loadFile($file->getWebContentLink(), $newName);
+							Yii::debug('Попытка отправить файл: ' . $newName);
+							$result = Yii::$app->telegram->sendDocument([
 								'chat_id' => $idTelegram,
-								'text' => $file->getWebContentLink(),
-							]); 
+								'document' => $document,
+								'caption' => $newName
+							]);
+							Yii::debug(json_encode($result));
+							if (!$result) {
+								Yii::debug('Что-то пошло не так и отправляю ссылку');
+								$result = Yii::$app->telegram->sendMessage([
+									'chat_id' => $idTelegram,
+									'text' => $file->getWebContentLink(),
+								]); 
+							}
 						}
 					}
 				}
@@ -276,24 +298,33 @@ class DefaultController extends Controller {
 													'title' => ['.torrentcol1', 'text'],
 													'link' => ['.torrentcol4 > a', 'href']
 												])
-												->query()->getData()->all();
+												->range('#publicTorrentTable > tr')->query()->getData()->all();
 				}
 				catch (ClientException $e) {
 					Yii::error($e->getMessage());
 					continue;
 				}
+				Yii::debug($items);
 				foreach ($items as $item) {
-					Yii::$app->telegram->sendDocument([
-						'chat_id' =>$idTelegram,
+					$result = Yii::$app->telegram->sendDocument([
+						'chat_id' => $idTelegram,
 						'document' => $this->loadFile($anilibria . $item['link']),
 						'caption' => $item['title']
 					]);
+					Yii::debug($item);
+					Yii::debug($result);
 				}
 			}
 		}
 	}
 
 	public function actionTest() {
+	}
+
+
+	public function actionTestpage() {
+		$this->layout = false;
+		return $this->render('testpage');
 	}
 
 	private function loadFile($url, $filename = null) {

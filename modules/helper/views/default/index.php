@@ -6,6 +6,7 @@ use yii\helpers\Html;
 use yii\helpers\ArrayHelper;
 use yii\helpers\StringHelper;
 use app\models\User;
+use app\modules\template\models\Template;
 
 /* @var $this \yii\web\View */
 /* @var $model \app\models\Items */
@@ -17,6 +18,8 @@ echo GridView::widget([
 	'dataProvider' => $model->search(),
 	'filterModel' => $model,
 	'pjax' => true,
+	'hover' => true,
+	'striped' => false,
 	'toolbar' => [
 		[
 			'content' => Html::a('<i class="glyphicon glyphicon-repeat"></i>', '#', [
@@ -35,7 +38,9 @@ echo GridView::widget([
 	'rowOptions' => function ($data) {
 		if ($data->now != $data->new) {
 			return ['class' => 'info'];
-		}
+		} else if ($data->error) {
+			return ['class' => 'danger'];
+		} 
 	},
 	'columns' => [
 		[
@@ -81,11 +86,11 @@ echo GridView::widget([
 			'attribute' => 'id_template',
 			'format' => 'raw',
 			'value' => function ($data) {
-				return $data::templateList()[$data->id_template]['name'];
+				return $data->template->name;
 			},
 			'width' => '200px',
 			'filterType' => GridView::FILTER_SELECT2,
-			'filter' => ArrayHelper::map($model::templateList(), 'id', 'name'), 
+			'filter' => Template::all(), 
 			'filterWidgetOptions' => [
 				'pluginOptions' => ['placeholder' => '',  'allowClear' => true],
 			],
@@ -116,7 +121,7 @@ echo GridView::widget([
 						'data-toggle' => 'tooltip',
 					]);
 					if ($data->link_new) {
-						$out = Html::a($tooltip, $data::getFullLink($data->link_new, $data->id_template), ['target' => '_blank']);
+						$out = Html::a($tooltip, $data->template->full_link[0] . $data->link_new . $data->template->full_link[1], ['target' => '_blank']);
 					} else {
 						$out = $tooltip;
 					}
@@ -148,8 +153,19 @@ echo GridView::widget([
 					}
 					return $button;
 				},
+				'copy' => function ($url, $model) {
+					$button = '';
+					if (\Yii::$app->user->identity->copying == '1') {
+						$button = Html::a('<span class="glyphicon glyphicon-film"></span> <span class="glyphicon glyphicon-plus"></span>', '#', [
+							'class' => 'copy',
+							'title' => 'Copy',
+							'data-id' => $model->id,
+						]) . '<br>';
+					}
+					return $button;
+				},
 			],
-			'template' => '{check} {update} {delete}',
+			'template' => '{check} {copy} {update} {delete}',
 			'options' => [
 				'width' => '55px',
 			],

@@ -4,11 +4,13 @@ use kartik\form\ActiveForm;
 use kartik\builder\Form;
 use yii\helpers\Html;
 
-$form = ActiveForm::begin();
+$form = ActiveForm::begin(['options' => ['autocomplete' => 'off']]);
 $attributes = [
 		'login' => [],
-		'id_telegram' => [],
 		'password' => [],
+		'id_telegram' => [],
+		'show_all' => ['type' => Form::INPUT_CHECKBOX],
+		'copying' => ['type' => Form::INPUT_CHECKBOX],
 	];
 if (Yii::$app->user->identity->admin) {
 	$attributes['admin'] = ['type' => Form::INPUT_CHECKBOX];
@@ -16,7 +18,7 @@ if (Yii::$app->user->identity->admin) {
 echo Form::widget([
 	'model' => $model,
 	'form' => $form,
-	'columns' => 2,
+	'columns' => 3,
 	'attributes' => $attributes,
 ]);
 

@@ -6,6 +6,7 @@ use yii\web\Controller;
 use yii\httpclient\Client;
 use app\models\Items;
 use app\models\User;
+use app\modules\template\models\Template;
 use app\components\thread\Thread;
 use QL\QueryList;
 use VK\Client\VKApiClient;
@@ -13,7 +14,7 @@ use app\components\Str;
 
 
 /**
- * Controller for Helper app
+ * Controller for Helper module
  */
 class DefaultController extends Controller {
 
@@ -59,18 +60,18 @@ class DefaultController extends Controller {
 	 * @return json
 	 */
 	public function actionGetData($link, $id_template, $offset = 0) {
-		if ($id_template == 4) {
-			$template = Items::templateList($offset)[$id_template];
+		$template = Template::findOne($id_template);
+		if ($template->type == 1) {
 			$client = new Client();
-			$response = $client->get($link)->send();
+			$response = $client->get($link . '?disable_polymer=1')->send();
 			$content = $response->content;
 			$items = [
-				'title' => Str::explode($template['title'], $content),
-				'now' => Str::explode($template['now'], $content),
-				'link_img' => Str::explode($template['link_img'], $content),
-				'link_new' => Str::explode($template['link_new'], $content)
+				'title' => Str::explode($template->title, $content),
+				'now' => Str::explode($template->new, $content),
+				'link_new' => Str::explode($template->link_new, $content),
+				'link_img' => Str::explode($template->link_img, $content),
 			];	
-		} else if ($id_template == 5) {
+		} else if ($template->type == 2) {
 			$vk = new VKApiClient();
 			$post = $vk->wall()->get(\Yii::$app->params['vkApiKey'], [
 							'owner_id' => $link,
@@ -90,15 +91,15 @@ class DefaultController extends Controller {
 				$items['now'] = $post['items'][0]['text'];
 			}
 		} else {
-			$template = Items::templateList($offset)[$id_template];
 			$items = QueryList::get($link)->rules([ 
-							'title' => $template['title'],
-							'now' => $template['now'],
-							'link_img' => $template['link_img'],
-							'link_new' => $template['link_new']
+							'title' => $template->title,
+							'now' => $template->new,
+							'link_new' => $template->link_new,
+							'link_img' => $template->link_img,
 						])
-						->query()->getData()->all()[0];
+						->query()->getData()->all();
 		}
+		$items['now'] = ($items['now'] != '') ? $items['now'] : $items['link_new'];
 		return json_encode($items);
 	}
 
@@ -131,16 +132,16 @@ class DefaultController extends Controller {
 		$Thread = new Thread();
 		foreach ($items as $value) {
 			$Thread->Create(function() use($value) {
-				if ($value->id_template == 4) {
-					$template = \app\models\Items::templateList($value->offset)[$value->id_template];
+				$template = app\modules\template\models\Template::findOne($value->id_template);
+				if ($template->type == 1) {
 					$client = new \yii\httpclient\Client();
-					$response = $client->get($value->link)->send();
+					$response = $client->get($value->link . '?disable_polymer=1', [], ['timeout' => 10])->send();
 					$content = $response->content;
 					$new = [
-						'now' => \app\components\Str::explode($template['now'], $content),
-						'link_new' => \app\components\Str::explode($template['link_new'], $content)
-					];	
-				} else if ($value->id_template == 5) {
+						'now' => \app\components\Str::explode($template->new, $content),
+						'link_new' => \app\components\Str::explode($template->link_new, $content)
+					];
+				} else if ($template->type == 2) {
 					$vk = new \VK\Client\VKApiClient();
 					$post = $vk->wall()->get(\Yii::$app->params['vkApiKey'], [
 									'owner_id' => $value->link,
@@ -156,23 +157,34 @@ class DefaultController extends Controller {
 						$new['now'] = $post['items'][0]['text'];
 					}
 				} else {
-					$template = \app\models\Items::templateList($value->offset)[$value->id_template];
-					$new = \QL\QueryList::get($value->link)->rules([
-								'now' => $template['now'], 
-								'link_new' => $template['link_new']
+					$new = \QL\QueryList::get($value->link, [], ['timeout' => 10])->rules([
+								'now' => $template->new, 
+								'link_new' => $template->link_new
 							])
-							->query()->getData()->all()[0];
+							->query()->getData()->all();
 				}
-				if (($new['now'] != $value->now && $new['now'] != $value->new) || ($new['now'] == $value->now && $new['now'] != $value->new)) {
+				if ($new['link_new'] == '' && $new['now'] == '') {
 					if (($model = \app\models\Items::findOne($value->id)) !== null) {
-						$model->new = $new['now'];
-						$model->link_new = $new['link_new'];
-						$model->dt_update = time();
+						$model->error = '1';
+						//$model->dt_update = time();
+						$model->save(FALSE, ['error', 'dt_update']);
+						return ['id' => $value->id, 'id_template' => $value->id_template, 'title' => $value->title, 'new' => $value->now, 'link_new' => $value->link_new, 'error' => '1'];
+					}
+				}
+				$new['now'] = ($new['now'] != '') ? $new['now'] : $new['link_new'];
+				if (($new['now'] != $value->now && $new['now'] != $value->new) || ($new['now'] == $value->now && $new['now'] != $value->new) || ($value->error == '1')) {
+					if (($model = \app\models\Items::findOne($value->id)) !== null) {
+						if ($new['now'] != $value->new) {
+							$model->new = $new['now'];
+							$model->link_new = $new['link_new'];
+							$model->dt_update = time();
+						}
+						$model->error = '0';
 						$model->save();
-						return ['id' => $value->id, 'id_template' => $value->id_template, 'title' => $value->title, 'new' => $new['now'], 'link_new' => $new['link_new']];
+						return ['id' => $value->id, 'id_template' => $value->id_template, 'title' => $value->title, 'new' => $new['now'], 'link_new' => $new['link_new'], 'error' => $model->error];
 					}
 				} else if ($new['now'] != $value->now && $new['now'] == $value->new) {
-					return ['id' => $value->id, 'id_template' => $value->id_template, 'title' => $value->title, 'new' => $value->new, 'link_new' => $value->link_new];
+					return ['id' => $value->id, 'id_template' => $value->id_template, 'title' => $value->title, 'new' => $value->new, 'link_new' => $value->link_new, 'error' => $value->error];
 				}
 			});
 		}
@@ -185,7 +197,6 @@ class DefaultController extends Controller {
 	 */
 	public function actionCreate() {
 		$model = new Items();
-
 		if ($model->load(\Yii::$app->request->post()) && $model->save()) {
 			return $this->redirect(['index']);
 		} else if (!$model->offset) {
@@ -213,6 +224,21 @@ class DefaultController extends Controller {
 		}
 
 		return $this->render('update', ['model' => $model]);
+	}
+
+	/**
+	 * Copies an existing Items model to user.
+	 * @param integer $id
+	 * @return mixed
+	 */
+	public function actionCopy($id) {
+		$model = $this->findModel($id);
+		$user = Yii::$app->user;
+		$newModel = new Items();
+		$newModel->load($model->attributes, '');
+		unset($newModel->id);
+		$newModel->user_id = $user->id;
+		return $newModel->save();
 	}
 
 	/**

@@ -49,6 +49,15 @@ echo GridView::widget([
 			],
 		],
 		[
+			'attribute' => 'show_all',
+			'format' => 'raw',
+			'value' => function ($data) {
+				return $data->show_all ? 'Да' : 'Нет';
+			},
+			'width' => '36px',
+			'filter' => false,
+		],
+		[
 			'attribute' => 'dt_helping',
 			'format' => 'raw',
 			'value' => function ($data) {

@@ -27,12 +27,13 @@ $title = isset($this->context->title) ? $this->context->title : '';
 		<title><?= Html::encode($title) ?></title>
 		<?php $this->head() ?>
 	</head>
-	<body class="skin-blue sidebar-mini <?//= sidebar-collapse ?>">
+	<body class="skin-blue sidebar-mini <?= 'sidebar-collapse' ?>">
 		<?php $this->beginBody() ?>
 		<div class="wrapper">
 			<header class="main-header">
 				<? /* Logo */ ?>
 				<a href="/" class="logo">
+					<span class="logo-mini"><i class="fa fa-eye"></i></span>
 					<span class="logo-lg"><?= Yii::$app->name ?></span>
 				</a>
 				<? /* Header Navbar: style can be found in header.less */ ?>
@@ -79,7 +80,8 @@ $title = isset($this->context->title) ? $this->context->title : '';
 						<li class="header">Ссылки</li>
 						<li><a href="<?= Url::to(['/user']) ?>"><i class="fa fa-user"></i> <span>User</span></a></li>
 						<li><a href="<?= Url::to(['/telegram']) ?>"><i class="fa fa-laptop"></i> <span>Telegram</span></a></li>
-						<li><a href="<?= Url::to(['/helper']) ?>"><i class="fa fa-book"></i> <span>Helper</span></a></li>
+						<li><a href="<?= Url::to(['/template']) ?>"><i class="fa fa-list-alt"></i> <span>Template</span></a></li>
+						<li><a href="<?= Url::to(['/helper']) ?>"><i class="fa fa-list"></i> <span>Helper</span></a></li>
 					</ul>
 					<?//= Yii::$app->c->widget('SideMenu') ?>
 				</section>

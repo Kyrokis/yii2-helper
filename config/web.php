@@ -56,6 +56,7 @@ $config = [
 	'modules' => [
 		'helper' => 'app\modules\helper\HelperModule',
 		'telegram' => 'app\modules\telegram\TelegramModule',
+		'template' => 'app\modules\template\TemplateModule',
 		'user' => 'app\modules\user\UserModule',
 		'debug' => [
 			'class' => 'yii\debug\Module',

@@ -28,7 +28,7 @@ class LoginForm extends \yii\base\Model {
 	 * Remember user auth
 	 * @var boolean
 	 */
-	public $rememberMe = false;
+	public $rememberMe = true;
 
 	/**
 	 * User data

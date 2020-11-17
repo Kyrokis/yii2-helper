@@ -9,7 +9,7 @@ use yii\bootstrap\Nav;
 use yii\bootstrap\NavBar;
 use yii\helpers\ArrayHelper;
 use yii\widgets\Breadcrumbs;
-use app\models\User;
+use app\modules\user\models\User;
 use app\assets\AppAsset;
 
 AppAsset::register($this);

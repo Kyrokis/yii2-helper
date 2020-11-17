@@ -1,6 +1,6 @@
 <?
 
-namespace app\models;
+namespace app\modules\user\models;
 
 use Yii;
 use yii\db\ActiveRecord;
@@ -80,7 +80,7 @@ class User extends ActiveRecord implements \yii\web\IdentityInterface {
 	 * @return array
 	 */
 	public static function all() {
-		return \yii\helpers\ArrayHelper::map(self::find()->where(['del' => '0'])->orderBy('id')->all(), 'id', 'login');
+		return \yii\helpers\ArrayHelper::map(self::find()->select(['id', 'login'])->where(['del' => '0'])->orderBy('id')->all(), 'id', 'login');
 	}
 
 	/**
@@ -140,7 +140,7 @@ class User extends ActiveRecord implements \yii\web\IdentityInterface {
 	 * @return static|null
 	 */
 	public static function findByLogin($login) {
-		return static::findOne(['login' => $login, 'del' => '0']);
+		return static::find()->where(['ILIKE', 'login', $login, false])->andWhere(['del' => '0'])->one();
 	}
 
 	/**

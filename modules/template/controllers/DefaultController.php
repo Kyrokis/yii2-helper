@@ -79,18 +79,32 @@ class DefaultController extends Controller {
 	}
 
 	/**
+	 * View an existing Template model.
+	 * @param integer $id
+	 * @return mixed
+	 */
+	public function actionView($id) {
+		$model = $this->findModel($id);
+		$model->load(null);
+		if (\Yii::$app->request->post()) {
+			$newModel = $this->copyModel($model);
+			return $this->redirect(['index']);
+			//return $this->redirect(['update', 'id' => $newModel->id]);
+		}
+		return $this->render('view', ['model' => $model]);
+	}
+
+	/**
 	 * Copies an existing Template model to user.
 	 * @param integer $id
 	 * @return mixed
 	 */
 	public function actionCopy($id) {
 		$model = $this->findModel($id);
-		$user = Yii::$app->user;
-		$newModel = new Template();
-		$newModel->load($model->attributes, '');
-		unset($newModel->id);
-		$newModel->user_id = $user->id;
-		return $newModel->save();
+		if ($this->copyModel($model)) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -123,6 +137,17 @@ class DefaultController extends Controller {
 		}
 		
 		throw new \yii\web\NotFoundHttpException('The requested page does not exist.');
+	}
+
+	private function copyModel($model) {
+		$newModel = new Template();
+		$newModel->load($model->attributes, '');
+		unset($newModel->id);
+		$newModel->user_id = Yii::$app->user->id;
+		if ($newModel->save(false)) {
+			return $newModel;
+		}
+		return false;
 	}
 
 	public function actionTest() {

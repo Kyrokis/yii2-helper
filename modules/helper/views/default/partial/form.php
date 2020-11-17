@@ -5,10 +5,12 @@ use kartik\builder\Form;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\helpers\ArrayHelper;
-use app\models\User;
+use app\modules\user\models\User;
 use app\modules\template\models\Template;
 
-$form = ActiveForm::begin(['options' => ['autocomplete' => 'off']]);
+$user = Yii::$app->user;
+$readonly = $this->context->action->id == 'view';
+$form = ActiveForm::begin(['options' => ['autocomplete' => 'off'], 'disabled' => $readonly]);
 $attributes = [
 	'link' => [],
 	'id_template' => [
@@ -22,7 +24,7 @@ $attributes = [
 	'now' => [],
 	'new' => [],
 ];
-if (Yii::$app->user->identity->admin) {
+if ($user->identity->admin) {
 	$attributes['user_id'] = ['type' => Form::INPUT_DROPDOWN_LIST, 'items' => User::all()];
 	$attributes['error'] = ['type' => Form::INPUT_CHECKBOX];
 }
@@ -30,10 +32,13 @@ echo Form::widget([
 	'model' => $model,
 	'form' => $form,
 	'columns' => 2,
-	'attributes' => $attributes, 
+	'attributes' => $attributes,
 ]);
-
-echo Html::button('Загрузить', ['type'=>'button', 'class'=>'btn btn-info get-data']);
-echo Html::button('Сохранить', ['type'=>'submitButton', 'class'=>'btn btn-primary']);
+if (!$readonly) {
+	echo Html::button('Загрузить', ['type' => 'button', 'class' => 'btn btn-info get-data']);
+	echo Html::button('Сохранить', ['type' => 'submitButton', 'class' => 'btn btn-primary']);
+} else {
+	echo Html::button('Копировать', ['type' => 'submitButton', 'class' => 'btn btn-primary']);
+}
 ActiveForm::end();
 ?>

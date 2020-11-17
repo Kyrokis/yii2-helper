@@ -4,7 +4,7 @@ namespace app\modules\user\controllers;
 use Yii;
 use yii\web\Controller;
 use yii\filters\AccessControl;
-use app\models\User;
+use app\modules\user\models\User;
 use app\models\LoginForm;
 
 

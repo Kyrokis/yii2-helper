@@ -5,7 +5,7 @@ use kartik\grid\GridView;
 use yii\helpers\Html;
 use yii\helpers\ArrayHelper;
 use yii\helpers\StringHelper;
-use app\models\User;
+use app\modules\user\models\User;
 use app\modules\template\models\Template;
 
 /* @var $this \yii\web\View */
@@ -22,14 +22,19 @@ echo GridView::widget([
 	'striped' => false,
 	'toolbar' => [
 		[
-			'content' => Html::a('<i class="glyphicon glyphicon-repeat"></i>', '#', [
+			'content' => Html::a('История', ['/helper/default/history'], [
+								'class' => 'btn btn-default',
+								'data-pjax' => '0',
+								'target' => '_blank'
+							]) .
+						Html::a('<i class="glyphicon glyphicon-repeat"></i>', '#', [
 								'class' => 'btn btn-default helping',
-								'title' => 'Обновить',
+								'title' => 'Обновить'
 							]) . 
-						Html::a('<i class="glyphicon glyphicon-remove"></i>', ['index'], [
-                			    'class' => 'btn btn-default',
-                			    'title'=> 'Сбросить фильтр',
-                			]), 
+						Html::a('<i class="glyphicon glyphicon-remove"></i>', [''], [
+								'class' => 'btn btn-default',
+								'title'=> 'Сбросить фильтр'								
+							]),
 		],
 	],
 	'panel' => [
@@ -72,10 +77,10 @@ echo GridView::widget([
 			'format' => 'raw',
 			'value' => function ($data) {
 				$link = $data->link;
-				if ($data->id_template == 5) {
+				if ($data->template->name == 'vk.com') {
 					$link = 'https://www.vk.com/club' . mb_substr($data->link, 1);
 				}
-				return Html::a($data->title, $link, ['target' => '_blank']);
+				return Html::a($data->title, $link, ['target' => '_blank']) . ' ' . Html::a('<span class="glyphicon glyphicon-time"></span>', ['/helper/default/history', 'ItemsHistory[item_id][]' => $data->id], ['style' => 'color: #6c757d!important;', 'target' => '_blank', 'data-pjax' => '0']);
 			},
 			'filterInputOptions' => [
 				'autocomplete' => 'off',
@@ -134,7 +139,19 @@ echo GridView::widget([
 			'attribute' => 'dt_update',
 			'format' => 'raw',
 			'value' => function ($data) {
-				return $data->dt_update ? Str::dateEngToRu(date('d F H:i', $data->dt_update)) : '';
+				$dt_update = $data->dt_update ? Str::dateEngToRu(date('d F H:i', $data->dt_update)) : '';
+				$estimate = $data->estimate;
+				$title = 'Ожидайте';
+				if ($estimate) {
+					$estimate_start = Str::dateEngToRu(date('d F H:i', $data->dt_update + $estimate[0]));
+					$estimate_end = Str::dateEngToRu(date('d F H:i', $data->dt_update + $estimate[1]));
+					$title = 'Ожидается: ' . $estimate_start . ' - ' . $estimate_end;
+				}
+				$tooltip = Html::tag('span', $dt_update, [
+						'title' => $title,
+						'data-toggle' => 'tooltip',
+					]);
+				return $tooltip;
 			},
 			'filter' => false,
 			'width' => '135px',
@@ -155,17 +172,43 @@ echo GridView::widget([
 				},
 				'copy' => function ($url, $model) {
 					$button = '';
-					if (\Yii::$app->user->identity->copying == '1') {
+					if (Yii::$app->user->identity->copying == '1') {
 						$button = Html::a('<span class="glyphicon glyphicon-film"></span> <span class="glyphicon glyphicon-plus"></span>', '#', [
 							'class' => 'copy',
 							'title' => 'Copy',
 							'data-id' => $model->id,
+							'data-module' => 'helper',
 						]) . '<br>';
 					}
 					return $button;
 				},
+				'view' => function ($url, $model) {
+					return Html::a('<span class="glyphicon glyphicon-sunglasses"></span>', $url, [
+						'title' => Yii::t('yii', 'View'),
+						'data-pjax' => '0',
+					]);
+				},
 			],
-			'template' => '{check} {copy} {update} {delete}',
+			'template' => '{check} {copy} {view} {update} {delete}',
+			'visibleButtons' => [
+				'check' => function ($model) {
+					$user = Yii::$app->user;
+					return ($user->identity->admin || $user->id == $model->user_id);
+				},
+				'update' => function ($model) {
+					$user = Yii::$app->user;
+					return ($user->identity->admin || $user->id == $model->user_id);
+				},
+				'delete' => function ($model) {
+					$user = Yii::$app->user;
+					return ($user->identity->admin || $user->id == $model->user_id);
+				},
+				'view' => function ($model) {
+					$user = Yii::$app->user;
+					return ($user->id != $model->user_id);
+				},
+
+			],
 			'options' => [
 				'width' => '55px',
 			],

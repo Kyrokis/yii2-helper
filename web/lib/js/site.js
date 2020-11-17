@@ -51,7 +51,8 @@ var site = {};
 	site.copy = function () {
 		var item = $(this);
 		var id = item.data('id');
-		$.get('/helper/default/copy', {'id': id}).done(function (data) {
+		var module = '/' + item.data('module');
+		$.get(module + '/default/copy', {'id': id}).done(function (data) {
 			if (data) {
 				location.reload();
 			} else {

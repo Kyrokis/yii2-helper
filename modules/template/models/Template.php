@@ -5,7 +5,7 @@ namespace app\modules\template\models;
 use Yii;
 use yii\db\ActiveRecord;
 use yii\helpers\ArrayHelper;
-use app\models\User;
+use app\modules\user\models\User;
 
 /**
  * This is the model class for table "template".
@@ -16,7 +16,6 @@ use app\models\User;
  * @property string $new
  * @property string $link_new
  * @property string $link_img
- * @property string $full_link
  * @property integer $user_id
  * @property string $type
  * @property string $del
@@ -24,6 +23,8 @@ use app\models\User;
 class template extends ActiveRecord {
 
 	const SCENARIO_SEARCH = 'search';
+
+	const SCENARIO_COPY = 'copy';
 
 	/**
 	 * @var string Title text
@@ -94,15 +95,15 @@ class template extends ActiveRecord {
 			[['title1', 'title2', 'link_new1', 'link_new2', 'link_img1', 'link_img2', 'new1', 'new2', 'full_link1', 'full_link2', 'type', 'del'], 'string'],
 			[['name', 'type'], 'required'],
 			[['title', 'link_new', 'link_img', 'new', 'full_link'], 'each', 'rule' => ['string']],
-			[['title1', 'title2', 'link_new1', 'link_new2', 'link_img1', 'link_img2', 'new1', 'new2'], 'required', 'when' => function($model) {return $model->type != 2;}, 
-																													'whenClient' => "function (attribute, value) { return $('#template-type').val() != '2'; }"],
+			[['title1', 'title2', 'link_new1', 'link_new2', 'new1', 'new2'], 'required', 'when' => function($model) {return $model->type != 2;}, 
+																						'whenClient' => "function (attribute, value) { return $('#template-type').val() != '2'; }"],
 			[['title'], 'safe', 'on' => self::SCENARIO_SEARCH],
 		];
 	}
 
 	/**
 	 * User
-	 * @return \app\models\User
+	 * @return \app\modules\user\models\User
 	 */
 	public function getUser() {
 		return $this->hasOne(User::className(), ['id' => 'user_id']);
@@ -251,4 +252,5 @@ class template extends ActiveRecord {
 		$template = self::findOne($id_template);
 		return $template->full_link[0] . $link_new . $template->full_link[1];
 	}
+
 }

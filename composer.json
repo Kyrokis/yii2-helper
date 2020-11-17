@@ -21,6 +21,7 @@
 		"kartik-v/yii2-grid": "@dev",
 		"kartik-v/yii2-builder": "@dev",
 		"kartik-v/yii2-widgets": "*",
+		"kartik-v/yii2-date-range": "*",
 		"jaeger/querylist": "dev-master",
 		"aki/yii2-bot-telegram": "*",
 		"google/apiclient":"^2.0",

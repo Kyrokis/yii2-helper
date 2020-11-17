@@ -7,7 +7,7 @@ use yii\helpers\ArrayHelper;
 use yii\helpers\StringHelper;
 
 /* @var $this \yii\web\View */
-/* @var $model \app\models\user */
+/* @var $model \app\modules\user\models\User */
 
 $this->params['breadcrumbs'][] = $this->context->title;
 $this->params['menuSide']['create'] = true;

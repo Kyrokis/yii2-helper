@@ -5,7 +5,7 @@ use kartik\grid\GridView;
 use yii\helpers\Html;
 use yii\helpers\ArrayHelper;
 use yii\helpers\StringHelper;
-use app\models\User;
+use app\modules\user\models\User;
 use app\modules\template\models\Template;
 
 /* @var $this \yii\web\View */
@@ -85,7 +85,7 @@ echo GridView::widget([
 			'attribute' => 'title',
 			'format' => 'raw',
 			'value' => function ($data) {
-				return json_encode($data->title->getValue());
+				return htmlspecialchars(json_encode($data->title->getValue()));
 			},
 			'filter' => false,
 		],
@@ -93,7 +93,7 @@ echo GridView::widget([
 			'attribute' => 'new',
 			'format' => 'raw',
 			'value' => function ($data) {
-				return json_encode($data->new->getValue());
+				return htmlspecialchars(json_encode($data->new->getValue()));
 			},
 			'filter' => false,
 		],
@@ -101,7 +101,7 @@ echo GridView::widget([
 			'attribute' => 'link_new',
 			'format' => 'raw',
 			'value' => function ($data) {
-				return json_encode($data->link_new->getValue());
+				return htmlspecialchars(json_encode($data->link_new->getValue()));
 			},
 			'filter' => false,
 		],
@@ -109,7 +109,7 @@ echo GridView::widget([
 			'attribute' => 'link_img',
 			'format' => 'raw',
 			'value' => function ($data) {
-				return json_encode($data->link_img->getValue());
+				return htmlspecialchars(json_encode($data->link_img->getValue()));
 			},
 			'filter' => false,
 		],		
@@ -123,12 +123,34 @@ echo GridView::widget([
 							'class' => 'copy',
 							'title' => 'Copy',
 							'data-id' => $model->id,
+							'data-module' => 'template',
 						]) . '<br>';
 					}
 					return $button;
 				},
+				'view' => function ($url, $model) {
+					return Html::a('<span class="glyphicon glyphicon-sunglasses"></span>', $url, [
+						'title' => Yii::t('yii', 'View'),
+						'data-pjax' => '0',
+					]);
+				},
 			],
-			'template' => '{copy} {update} {delete}',
+			'template' => '{copy} {view} {update} {delete}',
+			'visibleButtons' => [
+				'update' => function ($model) {
+					$user = Yii::$app->user;
+					return ($user->identity->admin || $user->id == $model->user_id);
+				},
+				'delete' => function ($model) {
+					$user = Yii::$app->user;
+					return ($user->identity->admin || $user->id == $model->user_id);
+				},
+				'view' => function ($model) {
+					$user = Yii::$app->user;
+					return ($user->id != $model->user_id);
+				},
+
+			],
 			'options' => [
 				'width' => '55px',
 			],

@@ -5,7 +5,8 @@ use Yii;
 use yii\web\Controller;
 use yii\httpclient\Client;
 use app\models\Items;
-use app\models\User;
+use app\models\ItemsHistory;
+use app\modules\user\models\User;
 use app\modules\template\models\Template;
 use app\components\thread\Thread;
 use QL\QueryList;
@@ -53,6 +54,23 @@ class DefaultController extends Controller {
 		$model->user_id = Yii::$app->user->id;
 		$model->load(\Yii::$app->request->get());
 		return $this->render('index', ['model' => $model]);
+	}
+
+	/**
+	 * History page
+	 * @return json
+	 */
+	public function actionHistory() {
+		$model = new ItemsHistory();
+		$model->load(\Yii::$app->request->get());
+		if (!$model->dt_start) {
+			$model->dt_start = date('d.m.Y', strtotime('-7 day'));
+		}
+		if (!$model->dt_end) {
+			$model->dt_end = date('d.m.Y', time());
+		}
+		$model->dt = $model->dt_start . ' - ' . $model->dt_end;
+		return $this->render('history', ['model' => $model]);
 	}
 
 	/**
@@ -157,7 +175,7 @@ class DefaultController extends Controller {
 						$new['now'] = $post['items'][0]['text'];
 					}
 				} else {
-					$new = \QL\QueryList::get($value->link, [], ['timeout' => 10])->rules([
+					$new = \QL\QueryList::get($value->link)->rules([
 								'now' => $template->new, 
 								'link_new' => $template->link_new
 							])
@@ -227,18 +245,31 @@ class DefaultController extends Controller {
 	}
 
 	/**
+	 * View an existing Items model.
+	 * @param integer $id
+	 * @return mixed
+	 */
+	public function actionView($id) {
+		$model = $this->findModel($id);
+		if (\Yii::$app->request->post()) {
+			$newModel = $this->copyModel($model);
+			return $this->redirect(['index']);
+			//return $this->redirect(['update', 'id' => $newModel->id]);
+		}
+		return $this->render('view', ['model' => $model]);
+	}
+
+	/**
 	 * Copies an existing Items model to user.
 	 * @param integer $id
 	 * @return mixed
 	 */
 	public function actionCopy($id) {
 		$model = $this->findModel($id);
-		$user = Yii::$app->user;
-		$newModel = new Items();
-		$newModel->load($model->attributes, '');
-		unset($newModel->id);
-		$newModel->user_id = $user->id;
-		return $newModel->save();
+		if ($this->copyModel($model)) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -271,6 +302,18 @@ class DefaultController extends Controller {
 		}
 		
 		throw new \yii\web\NotFoundHttpException('The requested page does not exist.');
+	}
+
+
+	private function copyModel($model) {
+		$newModel = new Items();
+		$newModel->load($model->attributes, '');
+		unset($newModel->id);
+		$newModel->user_id = Yii::$app->user->id;
+		if ($newModel->save()) {
+			return $newModel;
+		}
+		return false;
 	}
 
 	public function actionTest() {

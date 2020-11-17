@@ -4,10 +4,12 @@ use kartik\form\ActiveForm;
 use kartik\builder\Form;
 use yii\helpers\Html;
 use yii\helpers\Url;
-use app\models\User;
+use app\modules\user\models\User;
 use app\modules\template\models\Template;
 
-$form = ActiveForm::begin(['options' => ['autocomplete' => 'off']]);
+$user = Yii::$app->user;
+$readonly = $this->context->action->id == 'view';
+$form = ActiveForm::begin(['options' => ['autocomplete' => 'off'], 'disabled' => $readonly]);
 $attributes = [
 	'type' => [
 		'type' => Form::INPUT_DROPDOWN_LIST,
@@ -25,7 +27,7 @@ $attributes = [
 	'full_link1' => [],
 	'full_link2' => [],
 ];
-if (Yii::$app->user->identity->admin) {
+if ($user->identity->admin) {
 	$attributes['user_id'] = ['type' => Form::INPUT_DROPDOWN_LIST, 'items' => User::all(), 'options' => ['prompt' => '---']];
 }
 echo Form::widget([
@@ -35,6 +37,10 @@ echo Form::widget([
 	'attributes' => $attributes, 
 ]);
 
-echo Html::button('Сохранить', ['type'=>'submitButton', 'class'=>'btn btn-primary']);
+if (!$readonly) {
+	echo Html::button('Сохранить', ['type' => 'submitButton', 'class' => 'btn btn-primary']);
+} else {
+	echo Html::button('Копировать', ['type' => 'submitButton', 'class' => 'btn btn-primary']);
+}
 ActiveForm::end();
 ?>
